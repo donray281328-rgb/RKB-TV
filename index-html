@@ -1,0 +1,380 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RKB TV - Your #1 Kenyan Music Station</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        rkb: {
+                            red: '#E50914',
+                            darkRed: '#B20710',
+                            accent: '#FF2E3B',
+                            dark: '#08090C',
+                            card: '#12141C',
+                            panel: '#1A1D28',
+                            border: '#282C3D'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(8, 9, 12, 0.8); }
+        ::-webkit-scrollbar-thumb { background: rgba(229, 9, 20, 0.4); border-radius: 4px; }
+
+        .live-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* TV Scanlines effect overlay */
+        .tv-scanlines::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        /* Seamless video iframe mask to hide YouTube branding/origins */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: -60px;
+            left: -60px;
+            width: calc(100% + 120px);
+            height: calc(100% + 120px);
+            pointer-events: none; /* Disables right-clicks or links revealing youtube origin */
+        }
+
+        /* Floating reaction animations */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-130px) scale(1.5); opacity: 0; }
+        }
+        .reaction-bubble {
+            position: absolute;
+            animation: floatUp 1.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 35;
+        }
+
+        .marquee-text {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 22s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body class="bg-rkb-dark text-slate-100 min-h-screen flex flex-col justify-between selection:bg-rkb-red selection:text-white overflow-x-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-rkb-card/90 backdrop-blur-md sticky top-0 z-40 border-b border-rkb-border px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <!-- Top Left RKB TV Branding -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center bg-rkb-red text-white font-black text-xl tracking-wider px-4 py-1.5 rounded-xl shadow-lg shadow-rkb-red/30 border border-rkb-accent/40">
+                    RKB<span class="ml-1 text-xs px-1.5 py-0.5 bg-white text-rkb-red rounded font-extrabold">TV</span>
+                </div>
+                <div class="hidden sm:flex flex-col">
+                    <span class="text-xs font-bold text-white tracking-wide">24/7 KENYAN MUSIC STATION</span>
+                    <span class="text-[10px] text-slate-400">Pure Hits • Gengetone • Afro-Pop • Bongo Vibes</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 ml-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 live-pulse"></span>
+                    <span>LIVE BROADCAST</span>
+                </div>
+            </div>
+
+            <!-- Header Viewers & Status -->
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 text-xs text-slate-400 bg-rkb-panel px-3 py-1.5 rounded-full border border-rkb-border">
+                    <i class="fa-solid fa-repeat text-rkb-red"></i>
+                    <span>3-Day Kenyan Music Cycle Loop</span>
+                </div>
+                <div class="flex items-center gap-2 bg-rkb-panel px-3.5 py-1.5 rounded-full border border-rkb-border text-xs text-slate-300">
+                    <i class="fa-solid fa-headphones text-rkb-red"></i>
+                    <span id="liveAudienceCount" class="font-bold text-white">18,420</span>
+                    <span class="hidden sm:inline text-slate-400 text-[10px]">tuning in</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN BROADCAST DISPLAY AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-4">
+
+        <div id="tvContainer" class="relative bg-black rounded-2xl overflow-hidden shadow-2xl border border-rkb-border aspect-video w-full group tv-scanlines">
+            
+            <!-- Hidden YouTube Player Container without external branding -->
+            <div class="video-wrapper">
+                <iframe id="kenyanMusicPlayer"
+                        src="https://www.youtube-nocookie.com/embed/videoseries?list=PL4fGSI1pDJn6O1LS0XSdF3RyO0Aq_L2C2&autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&loop=1&enablejsapi=1"
+                        title="RKB TV Stream"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- TOP LEFT ON-SCREEN TV BRAND OVERLAY -->
+            <div class="absolute top-4 left-4 z-30 pointer-events-none flex items-center gap-2">
+                <div class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 shadow-2xl">
+                    <span class="bg-rkb-red text-white font-black text-xs px-2 py-0.5 rounded tracking-widest shadow">RKB TV</span>
+                    <span class="text-[11px] font-extrabold text-white tracking-wide">KENYA</span>
+                </div>
+            </div>
+
+            <!-- TOP RIGHT BROADCAST WATERMARK -->
+            <div class="absolute top-4 right-4 z-30 pointer-events-none opacity-60">
+                <span class="text-xs font-black text-white/80 uppercase tracking-widest bg-black/40 px-2.5 py-1 rounded-md border border-white/10">
+                    HD LIVE
+                </span>
+            </div>
+
+            <!-- LOWER THIRD: NOW PLAYING MUSIC INFO -->
+            <div class="absolute bottom-16 left-4 z-30 pointer-events-none transition-all duration-300 max-w-sm sm:max-w-md">
+                <div class="bg-gradient-to-r from-black/90 via-rkb-dark/90 to-transparent backdrop-blur-md p-3 rounded-xl border-l-4 border-rkb-red text-white shadow-2xl flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-rkb-red/20 border border-rkb-red/40 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-compact-disc text-rkb-red text-lg animate-spin" style="animation-duration: 4s;"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-[10px] font-bold text-rkb-red tracking-wider uppercase">Now Playing on RKB TV</div>
+                        <h2 id="currentTrackTitle" class="font-extrabold text-xs sm:text-sm truncate text-white">Best of Kenyan Hits Mix 2026</h2>
+                        <p id="currentTrackArtist" class="text-[11px] text-slate-300 truncate">Gengetone • Afro-Pop • Bongo Flava</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLOATING EMOJI REACTION CONTAINER -->
+            <div id="reactionContainer" class="absolute bottom-20 right-6 w-16 h-48 pointer-events-none z-30"></div>
+
+            <!-- CUSTOM TV CONTROLS OVERLAY BAR -->
+            <div class="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3 flex items-center justify-between gap-3 opacity-90 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleStationAudio()" id="audioBtn" class="w-9 h-9 rounded-xl bg-rkb-red hover:bg-rkb-darkRed text-white flex items-center justify-center transition-all shadow-lg active:scale-95" title="Mute/Unmute Music">
+                        <i id="audioIcon" class="fa-solid fa-volume-high text-xs"></i>
+                    </button>
+                    <button onclick="skipNextSong()" class="px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/90 border border-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95">
+                        <i class="fa-solid fa-forward-step text-[10px]"></i> Next Track
+                    </button>
+                </div>
+
+                <!-- Live Audience Interactive Reactions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="sendReaction('🔥')" class="px-2.5 py-1 rounded-lg bg-black/60 hover:bg-white/20 border border-white/20 text-xs text-white transition-all active:scale-90">
+                        🔥 <span id="countFire">1.2K</span>
+                    </button>
+                    <button onclick="sendReaction('🇰🇪')" class="px-2.5 py-1 rounded-lg bg-black/60 hover:bg-white/20 border border-white/20 text-xs text-white transition-all active:scale-90">
+                        🇰🇪 <span id="countKenyan">3.4K</span>
+                    </button>
+                    <button onclick="sendReaction('🎵')" class="px-2.5 py-1 rounded-lg bg-black/60 hover:bg-white/20 border border-white/20 text-xs text-white transition-all active:scale-90">
+                        🎵 <span id="countMusic">890</span>
+                    </button>
+                    <button onclick="toggleFullscreen()" class="p-2 rounded-lg bg-black/60 hover:bg-white/20 border border-white/20 text-white transition-all text-xs" title="Fullscreen TV View">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PLAYLIST INFORMATION & SCHEDULE DETAILS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div class="bg-rkb-card p-4 rounded-2xl border border-rkb-border flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-rkb-red uppercase tracking-wider">Rotation Mode</span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/30">Active</span>
+                    </div>
+                    <h3 class="font-extrabold text-sm text-white mb-1">3-Day Non-Stop Playlist Cycle</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        RKB TV continuously loops top Kenyan music tracks across 72 hours, ensuring fresh Kenyan music around the clock without repetition.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-rkb-border flex items-center justify-between text-xs text-slate-300">
+                    <span>Genres Included:</span>
+                    <span class="font-bold text-white">Gengetone, Afro-Pop, Bongo</span>
+                </div>
+            </div>
+
+            <div class="bg-rkb-card p-4 rounded-2xl border border-rkb-border md:col-span-2 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-music text-rkb-red"></i> Upcoming Kenyan Music Tracks
+                    </h3>
+                    <span class="text-[11px] text-slate-400">Continuous Station Loop</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="trackQueue">
+                    <!-- Tracks rendered via JS -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- BOTTOM TICKER & LIVE CLOCK BANNER -->
+    <footer class="bg-rkb-card border-t border-rkb-border mt-4">
+        
+        <!-- Continuous Scrolling Banner -->
+        <div class="bg-rkb-red text-white py-2 px-4 flex items-center overflow-hidden border-b border-rkb-accent/30 shadow-md">
+            <span class="bg-black text-white font-black text-[10px] px-2.5 py-0.5 rounded tracking-widest mr-4 shrink-0 uppercase shadow">
+                RKB TV
+            </span>
+            <div class="overflow-hidden whitespace-nowrap w-full">
+                <div class="marquee-text font-bold text-xs tracking-wide">
+                    Your one and only channel that plays music • Non-stop Kenyan Hits • 24/7 Pure East African Vibes • RKB TV Kenya • Your one and only channel that plays music •
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar with Clock on Bottom Left -->
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            
+            <!-- BOTTOM LEFT TIME DISPLAY -->
+            <div class="flex items-center gap-3 bg-rkb-panel px-3.5 py-1.5 rounded-xl border border-rkb-border">
+                <i class="fa-solid fa-clock text-rkb-red text-sm"></i>
+                <div class="flex items-center gap-2">
+                    <span id="liveClock" class="font-mono font-bold text-sm text-white">00:00:00 AM</span>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">(EAT / Kenya Time)</span>
+                </div>
+            </div>
+
+            <!-- Bottom Center Statement -->
+            <div class="text-center font-medium text-slate-300">
+                <span class="text-rkb-red font-bold">RKB TV</span> — Your one and only channel that plays music
+            </div>
+
+            <!-- Bottom Right Info -->
+            <div class="text-[11px] text-slate-500">
+                &copy; 2026 RKB TV Broadcasting Station
+            </div>
+
+        </div>
+    </footer>
+
+    <script>
+        // Curated Kenyan Music Tracks Queue
+        const kenyanTracks = [
+            { title: "Kwangwaru & East Africa Hits Mix", artist: "Kenyan Bongo & Afro Hits", genre: "Bongo / Afro-Pop" },
+            { title: "Gengetone Fire Wave 2026", artist: "Nairobi Top Gengetone Stars", genre: "Gengetone" },
+            { title: "Nairobi Nights & Chill Beats", artist: "Kenyan Urban Afrobeat", genre: "Afro-Pop" },
+            { title: "Swahili Praise & Gospel Vibe", artist: "Kenyan Gospel Hits", genre: "Swahili Gospel" },
+            { title: "Rhumba & Benga Classics", artist: "Kenyan Legends Collection", genre: "Benga Classic" }
+        ];
+
+        let currentTrackIndex = 0;
+        let isMuted = false;
+
+        // Update Live Clock at Bottom Left
+        function updateLiveClock() {
+            const clockEl = document.getElementById('liveClock');
+            const now = new Date();
+            
+            // Format time string
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; // hour '0' should be '12'
+            const formattedHours = String(hours).padStart(2, '0');
+
+            clockEl.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+        }
+
+        // Render Upcoming Track Queue
+        function renderTrackQueue() {
+            const queueEl = document.getElementById('trackQueue');
+            queueEl.innerHTML = kenyanTracks.map((track, idx) => `
+                <div class="p-2.5 rounded-xl bg-rkb-panel border ${idx === currentTrackIndex ? 'border-rkb-red bg-rkb-red/10' : 'border-rkb-border'} flex items-center justify-between">
+                    <div class="min-w-0 flex items-center gap-2">
+                        <span class="text-[10px] font-bold ${idx === currentTrackIndex ? 'text-rkb-red' : 'text-slate-500'} font-mono">0${idx+1}</span>
+                        <div class="truncate">
+                            <div class="font-bold text-white truncate">${track.title}</div>
+                            <div class="text-[10px] text-slate-400 truncate">${track.artist}</div>
+                        </div>
+                    </div>
+                    <span class="text-[9px] px-2 py-0.5 rounded ${idx === currentTrackIndex ? 'bg-rkb-red text-white font-bold' : 'bg-rkb-border text-slate-400'} shrink-0">
+                        ${idx === currentTrackIndex ? 'PLAYING' : track.genre}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Toggle Audio
+        function toggleStationAudio() {
+            const audioIcon = document.getElementById('audioIcon');
+            const iframe = document.getElementById('kenyanMusicPlayer');
+            
+            isMuted = !isMuted;
+            if(isMuted) {
+                audioIcon.className = "fa-solid fa-volume-xmark text-xs";
+                iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+            } else {
+                audioIcon.className = "fa-solid fa-volume-high text-xs";
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+            }
+        }
+
+        // Skip to next track in queue
+        function skipNextSong() {
+            currentTrackIndex = (currentTrackIndex + 1) % kenyanTracks.length;
+            const track = kenyanTracks[currentTrackIndex];
+            
+            document.getElementById('currentTrackTitle').textContent = track.title;
+            document.getElementById('currentTrackArtist').textContent = `${track.artist} • ${track.genre}`;
+            
+            renderTrackQueue();
+        }
+
+        // Send Floating Reaction
+        function sendReaction(emoji) {
+            if(emoji === '🔥') {
+                const count = document.getElementById('countFire');
+                count.textContent = (parseFloat(count.textContent) + 0.1).toFixed(1) + 'K';
+            } else if(emoji === '🇰🇪') {
+                const count = document.getElementById('countKenyan');
+                count.textContent = (parseFloat(count.textContent) + 0.1).toFixed(1) + 'K';
+            } else {
+                const count = document.getElementById('countMusic');
+                count.textContent = parseInt(count.textContent) + 1;
+            }
+
+            const container = document.getElementById('reactionContainer');
+            const bubble = document.createElement('div');
+        
